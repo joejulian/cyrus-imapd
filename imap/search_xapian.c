@@ -1383,7 +1383,7 @@ static int xapian_run_guid_cb(const conv_guidrec_t *rec, void *rock)
     hash_table *matches = xrock->matches;
 
     if (!(bb->opts & SEARCH_MULTIPLE)) {
-        if (strcmp(rec->mboxid, bb->mailbox->uniqueid))
+        if (strcmp(rec->mailbox, CONV_GUID_KEY_MBOX(rec, bb->mailbox)))
             return 0;
     }
 
@@ -1391,7 +1391,9 @@ static int xapian_run_guid_cb(const conv_guidrec_t *rec, void *rock)
         if (rec->part) return 0;
 
         mbentry_t *mbentry = NULL;
-        int r = mboxlist_lookup_by_uniqueid(rec->mboxid, &mbentry, NULL);
+        int r = (rec->version > CONV_GUIDREC_BYNAME_VERSION) ?
+            mboxlist_lookup_by_uniqueid(rec->mailbox, &mbentry, NULL) :
+            mboxlist_lookup(rec->mailbox, &mbentry, NULL);
         if (r) return r;
 
         r = bb->proc(mbentry->name, /*uidvalidity*/0, rec->uid, NULL, bb->rock);
@@ -1401,11 +1403,11 @@ static int xapian_run_guid_cb(const conv_guidrec_t *rec, void *rock)
         return r;
     }
 
-    struct xapian_match *match = hash_lookup(rec->mboxid, matches);
+    struct xapian_match *match = hash_lookup(rec->mailbox, matches);
     if (!match) {
         match = xzmalloc(sizeof(struct xapian_match));
         bv_init(&match->uids);
-        hash_insert(rec->mboxid, match, matches);
+        hash_insert(rec->mailbox, match, matches);
     }
 
     bv_set(&match->uids, rec->uid);
@@ -2391,7 +2393,7 @@ static int is_indexed_cb(const conv_guidrec_t *rec, void *rock)
     if (rec->part) return 0;
 
     /* Is this GUID record in the mailbox we are currently indexing? */
-    if (!strcmp(tr->super.mailbox->uniqueid, rec->mboxid)) {
+    if (!strcmp(CONV_GUID_KEY_MBOX(rec, tr->super.mailbox), rec->mailbox)) {
         if (seqset_ismember(tr->indexed, rec->uid) ||
             seqset_ismember(tr->oldindexed, rec->uid)) {
             return CYRUSDB_DONE;
@@ -2400,7 +2402,7 @@ static int is_indexed_cb(const conv_guidrec_t *rec, void *rock)
     }
 
     /* Is this GUID record in an already cached sequence set? */
-    struct seqset *seq = hash_lookup(rec->mboxid, &tr->cached_seqs);
+    struct seqset *seq = hash_lookup(rec->mailbox, &tr->cached_seqs);
     if (seq) {
         return seqset_ismember(seq, rec->uid) ? CYRUSDB_DONE : 0;
     }
@@ -2410,20 +2412,22 @@ static int is_indexed_cb(const conv_guidrec_t *rec, void *rock)
     seq = seqset_init(0, SEQ_MERGE);
     int r = 0;
 
-    r = mboxlist_lookup_by_uniqueid(rec->mboxid, &mb, NULL);
+    r = (rec->version > CONV_GUIDREC_BYNAME_VERSION) ?
+        mboxlist_lookup_by_uniqueid(rec->mailbox, &mb, NULL) :
+        mboxlist_lookup(rec->mailbox, &mb, NULL);
     if (r) {
         syslog(LOG_ERR, "is_indexed_cb: mboxlist_lookup %s failed: %s",
-                rec->mboxid, error_message(r));
+                rec->mailbox, error_message(r));
         goto out;
     }
     r = read_indexed(tr->activedirs, tr->activetiers, mb->name, mb->uidvalidity,
                     seq, /*do_cache*/1, tr->super.verbose);
     if (r) {
         syslog(LOG_ERR, "is_indexed_cb: read_indexed %s failed: %s",
-                rec->mboxid, error_message(r));
+                rec->mailbox, error_message(r));
         goto out;
     }
-    hash_insert(rec->mboxid, seq, &tr->cached_seqs);
+    hash_insert(rec->mailbox, seq, &tr->cached_seqs);
 
 out:
     mboxlist_entry_free(&mb);
