@@ -46,6 +46,7 @@
 
 #include "auth.h"
 #include "conversations.h"
+#include "dav_db.h"
 #include "hash.h"
 #include "httpd.h"
 #include "json_support.h"
@@ -164,6 +165,7 @@ extern int  jmap_openmbox(jmap_req_t *req, const char *name,
                           struct mailbox **mboxp, int rw);
 extern int jmap_openmbox_by_uniqueid(jmap_req_t *req, const char *id,
                                      struct mailbox **mboxp, int rw);
+extern mbentry_t *jmap_mbentry_from_dav(struct dav_data *dav);
 extern int  jmap_isopenmbox(jmap_req_t *req, const char *name);
 extern void jmap_closembox(jmap_req_t *req, struct mailbox **mboxp);
 

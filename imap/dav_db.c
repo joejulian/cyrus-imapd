@@ -200,10 +200,11 @@ struct sqldb_upgrade davdb_upgrade[] = {
   { 6, CMD_DBUPGRADEv6, NULL },
   { 7, CMD_DBUPGRADEv7, NULL },
   { 8, CMD_DBUPGRADEv8, NULL },
+  /* Don't upgrade to version 9.  We only jump to 9 on CREATE */
   { 0, NULL, NULL }
 };
 
-#define DB_VERSION 8
+#define DB_VERSION 9
 
 static int in_reconstruct = 0;
 
