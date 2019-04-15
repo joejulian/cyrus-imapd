@@ -1387,27 +1387,26 @@ static int xapian_run_guid_cb(const conv_guidrec_t *rec, void *rock)
             return 0;
     }
 
+    mbentry_t *mbentry = NULL;
+    int r = (rec->version > CONV_GUIDREC_BYNAME_VERSION) ?
+        mboxlist_lookup_by_uniqueid(rec->mailbox, &mbentry, NULL) :
+        mboxlist_lookup(rec->mailbox, &mbentry, NULL);
+    if (r) return r;
+
     if (xrock->is_legacy) {
-        if (rec->part) return 0;
-
-        mbentry_t *mbentry = NULL;
-        int r = (rec->version > CONV_GUIDREC_BYNAME_VERSION) ?
-            mboxlist_lookup_by_uniqueid(rec->mailbox, &mbentry, NULL) :
-            mboxlist_lookup(rec->mailbox, &mbentry, NULL);
-        if (r) return r;
-
-        r = bb->proc(mbentry->name, /*uidvalidity*/0, rec->uid, NULL, bb->rock);
+        r = (rec->part) ? 0:
+            bb->proc(mbentry->name, /*uidvalidity*/0, rec->uid, NULL, bb->rock);
 
         mboxlist_entry_free(&mbentry);
 
         return r;
     }
 
-    struct xapian_match *match = hash_lookup(rec->mailbox, matches);
+    struct xapian_match *match = hash_lookup(mbentry->name, matches);
     if (!match) {
         match = xzmalloc(sizeof(struct xapian_match));
         bv_init(&match->uids);
-        hash_insert(rec->mailbox, match, matches);
+        hash_insert(mbentry->name, match, matches);
     }
 
     bv_set(&match->uids, rec->uid);
@@ -1422,6 +1421,8 @@ static int xapian_run_guid_cb(const conv_guidrec_t *rec, void *rock)
         }
         strarray_add(partids, rec->part);
     }
+
+    mboxlist_entry_free(&mbentry);
 
     return 0;
 }
