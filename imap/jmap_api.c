@@ -1240,7 +1240,7 @@ HIDDEN int jmap_findblob(jmap_req_t *req, const char *from_accountid,
                 break;
             }
             if (!mypart->subpart) {
-                if (data.mbox->mbtype == MBTYPE_ADDRESSBOOK &&
+                if (mbtype_isa(data.mbox->mbtype) == MBTYPE_ADDRESSBOOK &&
                     (mypart = jmap_contact_findblob(&content_guid, data.part_id,
                                                     data.mbox, data.mr, blob))) {
                     break;
@@ -1287,7 +1287,7 @@ HIDDEN int jmap_cmpstate(jmap_req_t* req, json_t *state, int mbtype)
         }
         modseq_t client_modseq = atomodseq_t(s);
         modseq_t server_modseq = 0;
-        switch (mbtype) {
+        switch (mbtype_isa(mbtype)) {
          case MBTYPE_CALENDAR:
              server_modseq = req->counters.caldavmodseq;
              break;
@@ -1312,14 +1312,14 @@ HIDDEN modseq_t jmap_highestmodseq(jmap_req_t *req, int mbtype)
     modseq_t modseq;
 
     /* Determine current counter by mailbox type. */
-    switch (mbtype) {
+    switch (mbtype_isa(mbtype)) {
         case MBTYPE_CALENDAR:
             modseq = req->counters.caldavmodseq;
             break;
         case MBTYPE_ADDRESSBOOK:
             modseq = req->counters.carddavmodseq;
             break;
-        case 0:
+        case MBTYPE_EMAIL:
             modseq = req->counters.mailmodseq;
             break;
         default:
@@ -2537,7 +2537,7 @@ HIDDEN json_t *jmap_get_sharewith(const mbentry_t *mbentry)
 {
     char *aclstr = xstrdup(mbentry->acl);
     char *owner = mboxname_to_userid(mbentry->name);
-    int iscalendar = (mbentry->mbtype & MBTYPE_CALENDAR);
+    int iscalendar = mbtype_isa(mbentry->mbtype) == MBTYPE_CALENDAR;
 
     json_t *sharewith = json_null();
 
@@ -2652,7 +2652,7 @@ HIDDEN int jmap_set_sharewith(struct mailbox *mbox,
 
     if (isdav) {
         /* Create a hash table of user/access for DAV invites */
-        iscalendar = (mbox->mbtype & MBTYPE_CALENDAR);
+        iscalendar = mbtype_isa(mbox->mbtype) == MBTYPE_CALENDAR;
         construct_hash_table(&user_access, 10, 0);
     }
 
@@ -2801,7 +2801,7 @@ HIDDEN int jmap_set_sharewith(struct mailbox *mbox,
         /* Find the DAV namespace for this mailbox */
         if (iscalendar)
             irock.tgt.namespace = &namespace_calendar;
-        else if (mbox->mbtype & MBTYPE_ADDRESSBOOK)
+        else if (mbtype_isa(mbox->mbtype) == MBTYPE_ADDRESSBOOK)
             irock.tgt.namespace = &namespace_addressbook;
         else
             irock.tgt.namespace = &namespace_drive;

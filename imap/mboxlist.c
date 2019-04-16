@@ -200,24 +200,36 @@ EXPORTED const char *mboxlist_mbtype_to_string(uint32_t mbtype)
 
     buf_reset(&buf);
 
+    switch (mbtype_isa(mbtype)) {
+    case MBTYPE_EMAIL:
+        buf_putc(&buf, 'e');
+        break;
+    case MBTYPE_NETNEWS:
+        buf_putc(&buf, 'n');
+        break;
+    case MBTYPE_COLLECTION:
+        buf_putc(&buf, 'b');
+        break;
+    case MBTYPE_CALENDAR:
+        buf_putc(&buf, 'c');
+        break;
+    case MBTYPE_ADDRESSBOOK:
+        buf_putc(&buf, 'a');
+        break;
+    }
+
     if (mbtype & MBTYPE_DELETED)
         buf_putc(&buf, 'd');
     if (mbtype & MBTYPE_MOVING)
         buf_putc(&buf, 'm');
-    if (mbtype & MBTYPE_NETNEWS)
-        buf_putc(&buf, 'n');
     if (mbtype & MBTYPE_REMOTE)
         buf_putc(&buf, 'r');
     if (mbtype & MBTYPE_RESERVE)
         buf_putc(&buf, 'z');
-    if (mbtype & MBTYPE_CALENDAR)
-        buf_putc(&buf, 'c');
-    if (mbtype & MBTYPE_COLLECTION)
-        buf_putc(&buf, 'b');
-    if (mbtype & MBTYPE_ADDRESSBOOK)
-        buf_putc(&buf, 'a');
     if (mbtype & MBTYPE_INTERMEDIATE)
         buf_putc(&buf, 'i');
+    if (mbtype & MBTYPE_LEGACY_DIRS)
+        buf_putc(&buf, 'l');
 
     return buf_cstring(&buf);
 }
@@ -251,9 +263,6 @@ static struct dlist *mboxlist_entry_dlist(const mbentry_t *mbentry)
 
     if (mbentry->acl)
         _write_acl(dl, mbentry->acl);
-
-    if (mbentry->legacy_dir)
-        dlist_setnum32(dl, "L", 1);
 
     return dl;
 }
@@ -351,9 +360,6 @@ EXPORTED uint32_t mboxlist_string_to_mbtype(const char *string)
 
     for (; *string; string++) {
         switch (*string) {
-        case 'i':
-            mbtype |= MBTYPE_INTERMEDIATE;
-            break;
         case 'a':
             mbtype |= MBTYPE_ADDRESSBOOK;
             break;
@@ -365,6 +371,15 @@ EXPORTED uint32_t mboxlist_string_to_mbtype(const char *string)
             break;
         case 'd':
             mbtype |= MBTYPE_DELETED;
+            break;
+        case 'e':
+            mbtype |= MBTYPE_EMAIL;
+            break;
+        case 'i':
+            mbtype |= MBTYPE_INTERMEDIATE;
+            break;
+        case 'l':
+            mbtype |= MBTYPE_LEGACY_DIRS;
             break;
         case 'm':
             mbtype |= MBTYPE_MOVING;
@@ -444,9 +459,6 @@ static int parseentry_cb(int type, struct dlistsax_data *d)
             }
             else if (!strcmp(key, "I")) {
                 rock->mbentry->uniqueid = xstrdupnull(d->data);
-            }
-            else if (!strcmp(key, "L")) {
-                rock->mbentry->legacy_dir = 1;
             }
             else if (!strcmp(key, "M")) {
                 rock->mbentry->mtime = atoi(d->data);
@@ -4585,7 +4597,7 @@ static int _upgrade_cb(void *rock,
     buf_setmap(urock->namebuf, key, keylen);
     mbentry->name = mboxname_from_standard(buf_cstring(urock->namebuf));
 
-    mbentry->legacy_dir = 1;
+    mbentry->mbtype |= MBTYPE_LEGACY_DIRS;
     r = mboxlist_update_entry(mbentry->name, mbentry, urock->tid);
 
     mboxlist_entry_free(&mbentry);

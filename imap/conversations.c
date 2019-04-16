@@ -2154,7 +2154,7 @@ static int conversations_set_guid(struct conversations_state *state,
                               record->system_flags, record->internal_flags,
                               record->internaldate, body, base, add);
 
-    if (!r && (mailbox->mbtype == MBTYPE_ADDRESSBOOK) &&
+    if (!r && mbtype_isa(mailbox->mbtype) == MBTYPE_ADDRESSBOOK &&
         !strcmp(body->type, "TEXT") && !strcmp(body->subtype, "VCARD")) {
 
         struct vparse_card *vcard = record_to_vcard(mailbox, record);

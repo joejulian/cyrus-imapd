@@ -56,23 +56,37 @@
  */
 #define MAX_PARTITION_LEN 64
 
-/* flags for types of mailboxes */
-#define MBTYPE_EMAIL 0 /* default mbtype is zero */
-#define MBTYPE_REMOTE (1<<0) /* Not on this server (part is remote host) */
-#define MBTYPE_RESERVE (1<<1) /* Reserved [mupdate/imapd] /
-                               Rename Target [imapd] (part is normal, but
-                               you are not allowed to create this mailbox,
-                               even though it doesn't actually exist */
-#define MBTYPE_NETNEWS (1<<2) /* Netnews Mailbox - NO LONGER USED */
-#define MBTYPE_MOVING (1<<3) /* Mailbox in mid-transfer (part is remotehost!localpart) */
-#define MBTYPE_DELETED (1<<4) /* Mailbox has been deleted, but not yet cleaned up */
-#define MBTYPE_CALENDAR (1<<5) /* CalDAV Calendar Mailbox */
-#define MBTYPE_ADDRESSBOOK (1<<6) /* CardDAV Addressbook Mailbox */
-#define MBTYPE_COLLECTION (1<<7) /* WebDAV Collection Mailbox */
-#define MBTYPE_INTERMEDIATE (1<<8) /* Place holder for non-existent ancestor mailboxes */
+/* mailbox types and flags:
+ *
+ * the 4 lowest order bits are used for the mailbox type itself
+ * higher order bits are used for flags on the mailbox
+ */
+#define MBTYPE_EMAIL        0x0    /* Default mbtype is zero */
+#define MBTYPE_NETNEWS      0x1    /* Netnews Mailbox - NO LONGER USED */
 
-#define MBTYPES_DAV (MBTYPE_CALENDAR|MBTYPE_ADDRESSBOOK|MBTYPE_COLLECTION)
-#define MBTYPES_NONIMAP (MBTYPE_NETNEWS|MBTYPES_DAV)
+#define MBTYPE_COLLECTION   0x8    /* WebDAV Collection Mailbox */
+#define MBTYPE_CALENDAR     0x9    /* CalDAV Calendar Mailbox */
+#define MBTYPE_ADDRESSBOOK  0xa    /* CardDAV Addressbook Mailbox */
+
+/* mailbox flags */
+#define MBTYPE_REMOTE       (1<<4) /* Not on this server (part is remote host) */
+#define MBTYPE_RESERVE      (1<<5) /* Reserved [mupdate/imapd] /
+                                      Rename Target [imapd] (part is normal, but
+                                      you are not allowed to create this mailbox,
+                                      even though it doesn't actually exist */
+#define MBTYPE_MOVING       (1<<6) /* Mailbox in mid-transfer
+                                      (part is remotehost!localpart) */
+#define MBTYPE_DELETED      (1<<7) /* Mailbox has been deleted,
+                                      but not yet cleaned up */
+#define MBTYPE_INTERMEDIATE (1<<8) /* Place holder
+                                      for non-existent ancestor mailboxes */
+#define MBTYPE_LEGACY_DIRS  (1<<9) /* Mailbox path uses legacy (by name) dirs */
+
+#define MBTYPES_DAV         0x8
+#define MBTYPES_MASK        0xf
+#define MBTYPES_NONIMAP     MBTYPES_MASK
+
+#define mbtype_isa(mbtype) (mbtype & MBTYPES_MASK)
 
 /* master name of the mailboxes file */
 #define FNAME_MBOXLIST "/mailboxes.db"
@@ -87,7 +101,7 @@ struct mboxlist_entry {
     uint32_t uidvalidity;
     modseq_t createdmodseq;
     modseq_t foldermodseq;
-    int mbtype;
+    uint32_t mbtype;
     char *partition;
     char *server; /* holds remote machine for REMOTE mailboxes */
     char *acl;
@@ -95,7 +109,6 @@ struct mboxlist_entry {
     char *uniqueid;
     /* legacy upgrade support */
     char *legacy_specialuse;
-    int legacy_dir;
     /* replication support */
     ptrarray_t synonyms;
 };

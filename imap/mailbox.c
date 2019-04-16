@@ -1001,7 +1001,6 @@ static int mailbox_open_advanced(const char *name,
      * we will just use what we were passed */
     mailbox->acl = xstrdup(mbentry->acl);
     mailbox->mbtype = mbentry->mbtype;
-    mailbox->legacy_dir = mbentry->legacy_dir;
 
     mboxlist_entry_free(&mbentry);
 
@@ -3453,12 +3452,14 @@ static int mailbox_update_dav(struct mailbox *mailbox,
     if (mboxname_isdeletedmailbox(mailbox->name, NULL))
         return 0;
 
-    if (mailbox->mbtype & MBTYPE_ADDRESSBOOK)
+    switch (mbtype_isa(mailbox->mbtype)) {
+    case MBTYPE_ADDRESSBOOK:
         return mailbox_update_carddav(mailbox, old, new);
-    if (mailbox->mbtype & MBTYPE_CALENDAR)
+    case MBTYPE_CALENDAR:
         return mailbox_update_caldav(mailbox, old, new);
-    if (mailbox->mbtype & MBTYPE_COLLECTION)
+    case MBTYPE_COLLECTION:
         return mailbox_update_webdav(mailbox, old, new);
+    }
 
     return 0;
 }
@@ -4528,10 +4529,12 @@ EXPORTED unsigned mailbox_should_archive(struct mailbox *mailbox,
         return 1;
 
     /* Calendar and Addressbook are small files and need to be hot */
-    if (mailbox->mbtype & MBTYPE_ADDRESSBOOK)
+    switch (mbtype_isa(mailbox->mbtype)) {
+    case MBTYPE_ADDRESSBOOK:
         return 0;
-    if (mailbox->mbtype & MBTYPE_CALENDAR)
+    case MBTYPE_CALENDAR:
         return 0;
+    }
 
     /* don't archive flagged messages */
     if (keepflagged && (record->system_flags & FLAG_FLAGGED))
@@ -5325,12 +5328,15 @@ static int mailbox_delete_webdav(struct mailbox *mailbox)
 
 static int mailbox_delete_dav(struct mailbox *mailbox)
 {
-    if (mailbox->mbtype & MBTYPE_ADDRESSBOOK)
+    switch (mbtype_isa(mailbox->mbtype)) {
+    case MBTYPE_ADDRESSBOOK:
         return mailbox_delete_carddav(mailbox);
-    if (mailbox->mbtype & MBTYPE_CALENDAR)
+    case MBTYPE_CALENDAR:
         return mailbox_delete_caldav(mailbox);
-    if (mailbox->mbtype & MBTYPE_COLLECTION)
+    case MBTYPE_COLLECTION:
         return mailbox_delete_webdav(mailbox);
+    }
+
     return 0;
 }
 #endif /* WITH_DAV */

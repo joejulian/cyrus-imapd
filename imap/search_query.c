@@ -283,12 +283,12 @@ static search_folder_t *query_get_valid_folder(search_query_t *query,
     }
 
     if (mboxname_iscalendarmailbox(mboxname, 0) &&
-       !(query->want_mbtype & MBTYPE_CALENDAR)) {
+        mbtype_isa(query->want_mbtype) != MBTYPE_CALENDAR) {
         return NULL;
     }
 
     if (mboxname_isaddressbookmailbox(mboxname, 0) &&
-       !(query->want_mbtype & MBTYPE_ADDRESSBOOK)) {
+        mbtype_isa(query->want_mbtype) != MBTYPE_ADDRESSBOOK) {
         return NULL;
     }
 
