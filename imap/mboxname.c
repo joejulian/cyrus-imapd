@@ -1697,7 +1697,7 @@ EXPORTED char *mboxname_datapath(const char *partition,
     static char pathresult[MAX_MAILBOX_PATH+1];
     const char *root;
 
-    if (!partition || !uniqueid) return NULL;
+    if (!partition) return NULL;
 
     root = config_partitiondir(partition);
     if (!root) return NULL;
@@ -1707,7 +1707,14 @@ EXPORTED char *mboxname_datapath(const char *partition,
         return pathresult;
     }
 
-    mboxname_id_hash(pathresult, MAX_MAILBOX_PATH, root, uniqueid);
+    if (uniqueid) {
+        /* Mailbox dir by uniqueid */
+        mboxname_id_hash(pathresult, MAX_MAILBOX_PATH, root, uniqueid);
+    }
+    else {
+        /* Legacy mailbox dir by mboxname */
+        mboxname_hash(pathresult, MAX_MAILBOX_PATH, root, mboxname);
+    }
 
     if (uid) {
         int len = strlen(pathresult);
@@ -1730,7 +1737,7 @@ EXPORTED char *mboxname_archivepath(const char *partition,
     static char pathresult[MAX_MAILBOX_PATH+1];
     const char *root;
 
-    if (!partition || !uniqueid) return NULL;
+    if (!partition) return NULL;
 
     root = config_archivepartitiondir(partition);
     if (!root) root = config_partitiondir(partition);
@@ -1743,7 +1750,14 @@ EXPORTED char *mboxname_archivepath(const char *partition,
         return pathresult;
     }
 
-    mboxname_id_hash(pathresult, MAX_MAILBOX_PATH, root, uniqueid);
+    if (uniqueid) {
+        /* Mailbox dir by uniqueid */
+        mboxname_id_hash(pathresult, MAX_MAILBOX_PATH, root, uniqueid);
+    }
+    else {
+        /* Legacy mailbox dir by mboxname */
+        mboxname_hash(pathresult, MAX_MAILBOX_PATH, root, mboxname);
+    }
 
     if (uid) {
         int len = strlen(pathresult);
@@ -1800,7 +1814,7 @@ EXPORTED char *mboxname_metapath(const char *partition,
     const char *filename = NULL;
     char confkey[256];
 
-    if (!partition || !uniqueid) return NULL;
+    if (!partition) return NULL;
 
     *confkey = '\0';
 
@@ -1874,7 +1888,14 @@ EXPORTED char *mboxname_metapath(const char *partition,
         return metaresult;
     }
 
-    mboxname_id_hash(metaresult, MAX_MAILBOX_PATH, root, uniqueid);
+    if (uniqueid) {
+        /* Mailbox dir by uniqueid */
+        mboxname_id_hash(metaresult, MAX_MAILBOX_PATH, root, uniqueid);
+    }
+    else {
+        /* Legacy mailbox dir by mboxname */
+        mboxname_hash(metaresult, MAX_MAILBOX_PATH, root, mboxname);
+    }
 
     if (filename) {
         int len = strlen(metaresult);
