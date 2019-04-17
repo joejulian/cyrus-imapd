@@ -1387,7 +1387,7 @@ EXPORTED int mboxlist_update_intermediaries(const char *frommboxname,
                                                  mbtype, 1 /* dofolder */);
 
                 mbentry_t *newmbentry = mboxlist_entry_copy(mbentry);
-                newmbentry->mbtype = MBTYPE_DELETED;
+                newmbentry->mbtype |= MBTYPE_DELETED;
                 newmbentry->foldermodseq = modseq;
 
                 syslog(LOG_NOTICE,
@@ -1424,7 +1424,7 @@ EXPORTED int mboxlist_update_intermediaries(const char *frommboxname,
         newmbentry->uniqueid = xstrdupnull(makeuuid());
         newmbentry->createdmodseq = modseq;
         newmbentry->foldermodseq = modseq;
-        newmbentry->mbtype = MBTYPE_INTERMEDIATE;
+        newmbentry->mbtype |= MBTYPE_INTERMEDIATE;
         newmbentry->foldermodseq = modseq;
 
         syslog(LOG_NOTICE,
@@ -1619,12 +1619,12 @@ EXPORTED int mboxlist_createmailbox(const char *name, int mbtype,
     mbentry_t *oldmbentry = NULL;
     r = mboxlist_lookup_allow_all(name, &oldmbentry, NULL);
     if (!r) {
-        if (oldmbentry->mbtype == MBTYPE_DELETED) {
+        if (oldmbentry->mbtype & MBTYPE_DELETED) {
             /* then the UIDVALIDITY must be higher than before */
             if (uidvalidity <= oldmbentry->uidvalidity)
                 uidvalidity = oldmbentry->uidvalidity+1;
         }
-        else if (oldmbentry->mbtype == MBTYPE_INTERMEDIATE) {
+        else if (oldmbentry->mbtype & MBTYPE_INTERMEDIATE) {
             /* then use the existing mailbox ID and createdmodseq */
             uniqueid = xstrdupnull(oldmbentry->uniqueid);
             createdmodseq = oldmbentry->createdmodseq;
@@ -2012,7 +2012,7 @@ EXPORTED int mboxlist_deletemailbox(const char *name, int isadmin,
         int haschildren = mboxlist_haschildren(name);
         mbentry_t *newmbentry = mboxlist_entry_create();
         newmbentry->name = xstrdupnull(name);
-        newmbentry->mbtype = haschildren ? MBTYPE_INTERMEDIATE : MBTYPE_DELETED;
+        newmbentry->mbtype |= haschildren ? MBTYPE_INTERMEDIATE : MBTYPE_DELETED;
         if (mailbox) {
             newmbentry->uniqueid = xstrdupnull(mailbox->uniqueid);
             newmbentry->uidvalidity = mailbox->i.uidvalidity;
@@ -2392,7 +2392,7 @@ EXPORTED int mboxlist_renamemailbox(const mbentry_t *mbentry,
             /* store a DELETED marker */
             mbentry_t *oldmbentry = mboxlist_entry_create();
             oldmbentry->name = xstrdupnull(mbentry->name);
-            oldmbentry->mbtype = MBTYPE_DELETED;
+            oldmbentry->mbtype |= MBTYPE_DELETED;
             oldmbentry->uidvalidity = mbentry->uidvalidity;
             oldmbentry->uniqueid = xstrdupnull(mbentry->uniqueid);
             oldmbentry->createdmodseq = mbentry->createdmodseq;
